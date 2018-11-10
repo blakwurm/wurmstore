@@ -1,0 +1,1 @@
+from wurmstore.memstore import MemoryWurm

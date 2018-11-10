@@ -1,0 +1,5 @@
+#!/bin/bash
+
+. goenv
+cowsay -f vader Do not fail me
+ptw --onfail 'notify-send "Test Failure" "Tests failed, please see console output"' --onpass "cowsay -f ./r2d2.cow beepboop ALL GOOD!"
