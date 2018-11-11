@@ -1,0 +1,1 @@
+from wurmstore import Fact, dict_to_facts
