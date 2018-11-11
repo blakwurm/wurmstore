@@ -9,7 +9,11 @@ Fact = namedtuple("Fact", 'name body entity_id fact_type transaction_id', defaul
 
 Transaction = namedtuple("Transaction", 'transaction_id entity_id timestamp')
 
-Insertion = namedtuple("Insertion", 'transaction facts')
+Insertion = namedtuple("Insertion", 'transaction facts successful', defaults=[True])
+
+Head = namedtuple("Head", "entity_id transaction_id")
+
+ReadResult = namedtuple("ReadResult", 'results error')
 
 def dict_to_facts(entity, transaction = Transaction('', '', time.time())):
     dicto_copy = {**entity}
@@ -28,10 +32,28 @@ def dict_to_facts(entity, transaction = Transaction('', '', time.time())):
     return newfacts
 
 def getID(entity):
-    return entity.get('id', entity.get('entity_id', ''))
+    try:
+        return entity.get('id', entity.get('entity_id', ''))
+    except:
+        return entity[0].entity_id
 
 def genID(thing):
     return '{a}id{b}'.format(a = thing.upper()[slice(0, 3)], b = random64())
 
 def random64():
     return base62.encode(random.randint(9, 999999999999999999999999))
+
+def query_well_formed(search_query):
+    try:
+       search_query['find']
+       search_query['count']
+       search_query['where']
+       assert isinstance(search_query['count'], int)
+       assert isinstance(search_query['where'], dict) or isinstance(search_query['where'], list)
+       return True
+    except:
+       return False
+
+def ids_from_facts(facts):
+    raw_ids = [x.entity_id for x in facts]
+    return set(raw_ids)
