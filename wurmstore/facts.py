@@ -1,22 +1,34 @@
 from collections import namedtuple
+from contextlib import contextmanager
 from baseconv import base62
 import random
+import time
 
 
 Fact = namedtuple("Fact", 'name body entity_id fact_type transaction_id', defaults=['str', ''])
 
-def dict_to_facts(dicto):
-    dicto_copy = {**dicto}
-    entity_id = dicto_copy.pop('id')
-    newfacts = [Fact(transaction_id = '',
+Transaction = namedtuple("Transaction", 'transaction_id entity_id timestamp')
+
+Insertion = namedtuple("Insertion", 'transaction facts')
+
+def dict_to_facts(entity, transaction = Transaction('', '', time.time())):
+    dicto_copy = {**entity}
+    entity_id = ''
+    try:
+        entity_id = dicto_copy.pop('id')
+    except:
+        entity_id = dicto_copy.pop('entity_id')
+    newfacts = [Fact(transaction_id = transaction.transaction_id,
                      entity_id = entity_id,
                      name = key,
                      fact_type = 'TEXT',
-                     body = val) for key, val in dicto_copy.items()]
+                     body = val) 
+                for key, val 
+                in dicto_copy.items()]
     return newfacts
 
-Transaction = namedtuple("Transaction", 'transaction_id entity_id timestamp')
-
+def getID(entity):
+    return entity.get('id', entity.get('entity_id', ''))
 
 def genID(thing):
     return '{a}id{b}'.format(a = thing.upper()[slice(0, 3)], b = random64())

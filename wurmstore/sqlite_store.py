@@ -1,12 +1,10 @@
 import sqlite3
-from wurmstore.facts import Fact, Transaction, dict_to_facts
+from wurmstore.facts import Fact, Transaction, Insertion, dict_to_facts, genID, getID
+from contextlib import contextmanager
+import time
 
 
 print('module loaded')
-
-sql = """
-
-"""
 
 table_creation_sql = [
     """
@@ -33,15 +31,29 @@ class SQLiteStore:
         for x in table_creation_sql:
             self.__conn.execute(x)
 
+    @contextmanager
+    def __with_cursor(self):
+        yield self.__conn.cursor()
+        self.__conn.commit()
+
     def __insert_facts__(self, facts):
-        pass
+        with self.__with_cursor() as c:
+            return [c.execute('insert into facts values (?, ?, ?, ?, ?)', x) for x in facts]
     
-    def open_transaction(self):
-        return ''
+    def __insert_transaction__(self, transaction):
+        with self.__with_cursor() as c:
+            c.execute('insert into transactions values (?, ?, ?)', transaction)
     
+    def create_transaction(self, entity_id):
+        return Transaction(transaction_id = genID('transaction'), entity_id = entity_id, timestamp = int(time.time()))
+        
     def __deconstruct_dict(self, dicto):
         return dict_to_facts(dicto)
     
     def insert(self, entity):
-        entity_facts = dict_to_facts(entity) if isinstance(entity, dict) else entity
-        pass
+        transaction = self.create_transaction(entity[0].entity_id)
+        entity_facts = dict_to_facts(entity=entity, transaction=transaction) if isinstance(entity, dict) else [x._replace(transaction_id = transaction.transaction_id) for x in entity]
+        insert = Insertion(transaction = transaction, facts = entity_facts)
+        self.__insert_transaction__(transaction)
+        self.__insert_facts__(entity_facts)
+        return insert
