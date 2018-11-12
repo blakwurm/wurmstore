@@ -1,6 +1,6 @@
 import wurmstore
 from contextlib import contextmanager
-from wurmstore import WurmStore, Fact, dict_to_facts, genID
+from wurmstore import WurmStore, Fact, dict_to_facts, genID, facts_to_entity, group_facts_under_entity_id
 
 testdata = [
         {'id' : 'asdf', 'name': 'Jon', 'age': 34, 'fruit': 'pear', 'category': 'people'},
@@ -36,12 +36,19 @@ def test_insert():
 
 
 def setup_inserted_db():
-    #w = WurmStore('sqlite', 'db.sqlite')
+    #w = WurmStore('sqlite_naive', 'db.sqlite')
     w = WurmStore('memory')
     [w.insert(x) for x in testdata]
     return w
 
 incorrectly_formed_query = {}
+
+def test_incorrect_query():
+    w = setup_inserted_db()
+    bad_read_result = w.read(search_query = incorrectly_formed_query)
+    assert isinstance(bad_read_result.error, TypeError)
+    assert not bad_read_result.results
+
 
 def test_freshly_inserted_reads():
     get_all_people_query = {
@@ -50,9 +57,9 @@ def test_freshly_inserted_reads():
         'where': {'category': 'people'} 
     }
     w = setup_inserted_db()
-    assert isinstance(w.read(search_query = incorrectly_formed_query).error, TypeError)
     people_read_result = w.read(search_query = {**get_all_people_query})
     assert people_read_result.error is None
+    assert people_read_result.results
 
 
 def test_thing():

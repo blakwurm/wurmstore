@@ -57,3 +57,15 @@ def query_well_formed(search_query):
 def ids_from_facts(facts):
     raw_ids = [x.entity_id for x in facts]
     return set(raw_ids)
+
+def group_facts_under_entity_id(facts):
+    ids = {x.entity_id for x in facts}
+    raw_entities = {y: [x for x in facts if x.entity_id == y] for y in ids}
+    entities = {y: facts_to_entity(x) for y, x in raw_entities}
+    return entities
+
+def facts_to_entity(facts):
+    print("facts are " + facts)
+    raw = {x.name: x.body for x in facts}
+    return {**raw, **{'id': facts[0].entity_id}}
+

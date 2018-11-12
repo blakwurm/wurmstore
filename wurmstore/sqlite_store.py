@@ -1,11 +1,10 @@
 import sqlite3
-from wurmstore.facts import Fact, Transaction, Insertion, Head, ReadResult, dict_to_facts, genID, getID, query_well_formed, ids_from_facts
+from wurmstore.facts import Fact, Transaction, Insertion, Head, ReadResult, dict_to_facts, genID, getID, query_well_formed, ids_from_facts, facts_to_entity, group_facts_under_entity_id
 from contextlib import contextmanager
 from collections import Counter
 import time
 
 
-print('module loaded')
 
 table_creation_sql = [
     """
@@ -49,7 +48,6 @@ class SQLiteStore:
     
     def __insert_transaction__(self, transaction):
         with self.__with_cursor() as c:
-            print(transaction)
             c.execute('insert into transactions values (?, ?, ?)', transaction)
     
     def __insert_head__(self, transaction):
@@ -73,7 +71,6 @@ class SQLiteStore:
             else:
                 entity_facts = [x._replace(transaction_id = transaction.transaction_id) for x in entity]
             insert = Insertion(transaction = transaction, facts = entity_facts, successful = True)
-            print(transaction)
             self.__insert_transaction__(insert.transaction)
             self.__insert_facts__(insert.facts)
             return insert
@@ -101,9 +98,13 @@ class SQLiteStore:
                 ids = ids_from_facts(facts)
                 self.__get_transactions_for__(ids)
                 # todo - add bit where facts are condensed into an entity
-                return ReadResult(results = [], error = None)
+                return ReadResult(results = facts, error = None)
             except Exception as e:
                 return ReadResult(results = [], error = e)
         else:
             return ReadResult(results = [], error = TypeError())
         pass
+    
+    def read_group_by_entity(self, search_query):
+        readresult = self.read(search_query)
+        ids = {x.entity_id for x in readresult.results}
