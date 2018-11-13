@@ -54,6 +54,11 @@ class SQLiteStore:
         head = Head(entity_id = transaction.entity_id, transaction_id = transaction.transaction_id)
         with self.__with_cursor() as c:
             return c.execute('insert into heads values (?, ?)', head)
+        
+    def __insert_insertion__(self, insertion):
+        self.__insert_transaction__(insertion.transaction)
+        self.__insert_facts__(insertion.facts)
+        return insertion
     
     def create_transaction(self, entity_id):
         return Transaction(transaction_id = genID('transaction'), entity_id = entity_id, timestamp = int(time.time()))
@@ -64,16 +69,14 @@ class SQLiteStore:
     def insert(self, entity):
         try:
             transaction = self.create_transaction(getID(entity))
-            self.__insert_head__(transaction)
+            #self.__insert_head__(transaction)
             entity_facts = None
             if isinstance(entity, dict):
                 entity_facts = self.__deconstruct_dict(entity=entity, transaction=transaction)
             else:
                 entity_facts = [x._replace(transaction_id = transaction.transaction_id) for x in entity]
             insert = Insertion(transaction = transaction, facts = entity_facts, successful = True)
-            self.__insert_transaction__(insert.transaction)
-            self.__insert_facts__(insert.facts)
-            return insert
+            return self.__insert_insertion__(insert)
         except:
             return Insertion(transaction = None, facts = None, successful = False)
     
@@ -98,6 +101,7 @@ class SQLiteStore:
                 ids = ids_from_facts(facts)
                 self.__get_transactions_for__(ids)
                 # todo - add bit where facts are condensed into an entity
+                facts.sort(key=lambda a: a.entity_id)
                 return ReadResult(results = facts, error = None)
             except Exception as e:
                 return ReadResult(results = [], error = e)
