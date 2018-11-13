@@ -93,16 +93,14 @@ class SQLiteStore:
     def __get_transactions_for__(self, ids):
         sqlstring = "select * from transactions where entityID = ?"
 
+    def __read__(self, search_query):
+        return ReadResult(results = self.__get_facts_for__(search_query), error = None)
+
 
     def read(self, search_query):
         if (query_well_formed(search_query)):
             try:
-                facts = self.__get_facts_for__(search_query)
-                ids = ids_from_facts(facts)
-                self.__get_transactions_for__(ids)
-                # todo - add bit where facts are condensed into an entity
-                facts.sort(key=lambda a: a.entity_id)
-                return ReadResult(results = facts, error = None)
+                return self.__read__(search_query)
             except Exception as e:
                 return ReadResult(results = [], error = e)
         else:
