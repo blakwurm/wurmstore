@@ -49,6 +49,14 @@ def test_incorrect_query():
     assert isinstance(bad_read_result.error, TypeError)
     assert not bad_read_result.results
 
+def compile_facts_to_dicts(facts):
+    dicts = dict()
+    for fact in facts:
+        old_entity = dicts.get(fact.entity_id, {'id': fact.entity_id})
+        new_entity = {**old_entity, **{fact.name: fact.body}}
+        dicts.update({fact.entity_id: new_entity})
+    return dicts
+
 
 def test_freshly_inserted_reads():
     get_all_people_query = {
@@ -60,6 +68,11 @@ def test_freshly_inserted_reads():
     people_read_result = w.read(search_query = {**get_all_people_query})
     assert people_read_result.error is None
     assert people_read_result.results
+    assert isinstance(people_read_result.results, list)
+    entities = compile_facts_to_dicts(people_read_result.results)
+    assert entities.get(testdata[0]['id'], None)
+    print(entities)
+    assert entities[testdata[0]['id']] == testdata[0]
 
 
 def test_thing():

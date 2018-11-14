@@ -68,4 +68,3 @@ def facts_to_entity(facts):
     print("facts are " + facts)
     raw = {x.name: x.body for x in facts}
     return {**raw, **{'id': facts[0].entity_id}}
-

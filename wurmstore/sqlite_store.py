@@ -82,12 +82,25 @@ class SQLiteStore:
     
 
     def __get_facts_for__(self, search_query):
-        sqlstring = "select * from facts where name = ? AND body = ?"
+        sql_find_param = """
+        select * from facts where 
+        transaction_id in (
+            select transaction_id from transactions where entity_id in {a}
+        )
+        """
+        sql_sub_where_plug = "(select entity_id from facts where name = {b} and body :{b})"
+        print(sql_sub_where_plug)
+        sql_sub_where_insert = 'or entity_id in '.join([sql_sub_where_plug.format(b = x) for x in search_query['where']])
+        sql_find_all_for_ids = "select * from facts where entity_id = ?"
+        print(sql_sub_where_insert)
+        ids = []
         facts = []
         with self.__with_cursor() as c:
-            fact_sublists = [c.execute(sqlstring, [qname, qbody]) for qname,qbody in search_query['where'].items()]
-            raw_facts = [item for sublist in fact_sublists for item in sublist]
-            facts = [Fact._make(x) for x in raw_facts]
+            c.execute(sql_find_param.format(a = sql_sub_where_insert), search_query['where'])
+            raw_facts = c.fetchall()
+            converted_facts = [Fact._make(x) for x in raw_facts]
+            facts = converted_facts
+            
         return facts
     
     def __get_transactions_for__(self, ids):
@@ -96,16 +109,13 @@ class SQLiteStore:
     def __read__(self, search_query):
         return ReadResult(results = self.__get_facts_for__(search_query), error = None)
 
-
     def read(self, search_query):
-        if (query_well_formed(search_query)):
-            try:
-                return self.__read__(search_query)
-            except Exception as e:
-                return ReadResult(results = [], error = e)
-        else:
+        if (not query_well_formed(search_query)):
             return ReadResult(results = [], error = TypeError())
-        pass
+        try:
+            return self.__read__(search_query)
+        except Exception as e:
+            return ReadResult(results = [], error = e)
     
     def read_group_by_entity(self, search_query):
         readresult = self.read(search_query)
