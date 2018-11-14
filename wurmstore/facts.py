@@ -5,7 +5,7 @@ import random
 import time
 
 
-Fact = namedtuple("Fact", 'name body entity_id fact_type transaction_id', defaults=['str', ''])
+Fact = namedtuple("Fact", 'name body entity_id fact_type fact_operation transaction_id', defaults=['str', 'ADD', ''])
 
 Transaction = namedtuple("Transaction", 'transaction_id entity_id timestamp')
 
@@ -13,7 +13,11 @@ Insertion = namedtuple("Insertion", 'transaction facts successful', defaults=[Tr
 
 Head = namedtuple("Head", "entity_id transaction_id")
 
+InsertionResult = namedtuple("InsertionResult", 'results error')
+
 ReadResult = namedtuple("ReadResult", 'results error')
+
+DeleteResult = namedtuple("DeleteResult", 'results error')
 
 def dict_to_facts(entity, transaction = Transaction('', '', time.time())):
     dicto_copy = {**entity}
@@ -46,9 +50,8 @@ def random64():
 def query_well_formed(search_query):
     try:
        search_query['find']
-       search_query['count']
        search_query['where']
-       assert isinstance(search_query['count'], int)
+       assert isinstance(search_query.get('count', 0), int)
        assert isinstance(search_query['where'], dict) or isinstance(search_query['where'], list)
        return True
     except:

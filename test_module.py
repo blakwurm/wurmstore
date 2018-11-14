@@ -31,8 +31,8 @@ def test_insert():
     person = testdata[0]
     asfacts = dict_to_facts(person)
     insertion = w.insert(asfacts)
-    assert insertion.successful
-    assert insertion.transaction.entity_id == person['id']
+    assert not insertion.error
+    assert insertion.results[0].entity_id == person['id']
 
 
 def setup_inserted_db():
@@ -40,6 +40,17 @@ def setup_inserted_db():
     w = WurmStore('memory')
     [w.insert(x) for x in testdata]
     return w
+
+def setup_updated_db():
+    w = WurmStore('sqlite_naive', 'db.sqlite')
+    #w = WurmStore('memory')
+    [w.insert(x) for x in testdata]
+    w.insert([
+        w.Fact(name='fruit', body='banana', entity_id='123123'),
+        w.Fact(name='age', body='21', entity_id='qwerty')
+    ])
+
+
 
 incorrectly_formed_query = {}
 
@@ -58,14 +69,15 @@ def compile_facts_to_dicts(facts):
     return dicts
 
 
-def test_freshly_inserted_reads():
+def test_general_reads():
     get_all_people_query = {
         'find': '*',
-        'count': 1,
         'where': {'category': 'people'} 
     }
     w = setup_inserted_db()
     people_read_result = w.read(search_query = {**get_all_people_query})
+    if people_read_result.error:
+        raise people_read_result.error
     assert people_read_result.error is None
     assert people_read_result.results
     assert isinstance(people_read_result.results, list)
@@ -73,6 +85,16 @@ def test_freshly_inserted_reads():
     assert entities.get(testdata[0]['id'], None)
     print(entities)
     assert entities[testdata[0]['id']] == testdata[0]
+
+def test_id_reads():
+    get_one_person_query = {
+        'find': "*",
+        'count': 1,
+        'where': {'id': testdata[2]['id']}
+    }
+    w = setup_inserted_db()
+    id_read_result = w.read(get_one_person_query)
+    assert id_read_result.results
 
 
 def test_thing():
