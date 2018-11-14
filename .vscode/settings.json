@@ -1,3 +1,11 @@
 {
-    "python.pythonPath": "env/bin/python"
+    "python.pythonPath": "env/bin/python",
+    "files.watcherExclude": {
+        "**/env/**": true,
+        "**/__pycache__/**": true,
+        "**/.pytest_cache/**": true,
+        "**/.git/objects/**": true,
+        "**/.git/subtree-cache/**": true,
+        "**/node_modules/*/**": true
+    }
 }
