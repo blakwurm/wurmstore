@@ -102,7 +102,8 @@ class SQLiteStore:
                 param_query.update({'where_name{a}'.format(a=i): key})
                 param_query.update({'where_body{a}'.format(a=i): value})
                 raw_plugs.append('(name = :where_name{a} and body = :where_body{a})'.format(a=i))
-        param_query.update({'__timestamp': search_query.get('timestamp', get_now_in_millis())})
+        # Add 1 to now timestamp, as otherwise we can't get stuff that was added this milisecond
+        param_query.update({'__timestamp': search_query.get('timestamp', get_now_in_millis() + 1)})
         plug = 'and '.join(raw_plugs)
         print(plug)
         print(param_query)
