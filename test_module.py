@@ -111,6 +111,10 @@ def test_db_updates():
     assert entities.get('qwerty', None)['age'] == 21
     assert len(people_read_result.results) == 12
 
+def test_finding_individual_facts_with_query():
+    w = setup_inserted_db()
+    assert None
+
 
 
 def test_thing():
