@@ -1,6 +1,8 @@
 import wurmstore
 from contextlib import contextmanager
 from wurmstore import WurmStore, Fact, dict_to_facts, genID, facts_to_entity, group_facts_under_entity_id
+import wurmstore.facts as wf
+import time
 
 testdata = [
         {'id' : 'asdf', 'name': 'Jon', 'age': 34, 'fruit': 'pear', 'category': 'people'},
@@ -36,19 +38,20 @@ def test_insert():
 
 
 def setup_inserted_db():
-    #w = WurmStore('sqlite_naive', 'db.sqlite')
+    #w = WurmStore('sqlite_naive', 'db_inserted.sqlite')
     w = WurmStore('memory')
     [w.insert(x) for x in testdata]
-    return w
+    return w 
 
 def setup_updated_db():
-    w = WurmStore('sqlite_naive', 'db.sqlite')
-    #w = WurmStore('memory')
+    #w = WurmStore('sqlite_naive', 'db_updated.sqlite')
+    w = WurmStore('memory')
     [w.insert(x) for x in testdata]
     w.insert([
         w.Fact(name='fruit', body='banana', entity_id='123123'),
-        w.Fact(name='age', body='21', entity_id='qwerty')
+        w.Fact(name='age', body='21', fact_type='INT', entity_id='qwerty') 
     ])
+    return w
 
 
 
@@ -64,16 +67,16 @@ def compile_facts_to_dicts(facts):
     dicts = dict()
     for fact in facts:
         old_entity = dicts.get(fact.entity_id, {'id': fact.entity_id})
-        new_entity = {**old_entity, **{fact.name: fact.body}}
+        new_entity = {**old_entity, **{fact.name: wf.convert_fact_body(fact)}}
         dicts.update({fact.entity_id: new_entity})
     return dicts
 
+get_all_people_query = {
+    'find': '*',
+    'where': {'category': 'people'} 
+}
 
 def test_general_reads():
-    get_all_people_query = {
-        'find': '*',
-        'where': {'category': 'people'} 
-    }
     w = setup_inserted_db()
     people_read_result = w.read(search_query = {**get_all_people_query})
     if people_read_result.error:
@@ -94,7 +97,20 @@ def test_id_reads():
     }
     w = setup_inserted_db()
     id_read_result = w.read(get_one_person_query)
+    if id_read_result.error:
+        raise id_read_result.error
     assert id_read_result.results
+
+def test_db_updates():
+    w = setup_updated_db()
+    people_read_result = w.read(search_query = {**get_all_people_query})
+    if people_read_result.error:
+        raise people_read_result.error
+    entities = compile_facts_to_dicts(people_read_result.results)
+    assert entities.get('123123', None)['fruit'] == 'banana'
+    assert entities.get('qwerty', None)['age'] == 21
+    assert len(people_read_result.results) == 12
+
 
 
 def test_thing():

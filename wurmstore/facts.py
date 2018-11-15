@@ -5,7 +5,7 @@ import random
 import time
 
 
-Fact = namedtuple("Fact", 'name body entity_id fact_type fact_operation transaction_id', defaults=['str', 'ADD', ''])
+Fact = namedtuple("Fact", 'name body entity_id fact_type fact_operation transaction_id timestamp', defaults=['str', 'ADD', '', 0])
 
 Transaction = namedtuple("Transaction", 'transaction_id entity_id timestamp')
 
@@ -19,17 +19,29 @@ ReadResult = namedtuple("ReadResult", 'results error')
 
 DeleteResult = namedtuple("DeleteResult", 'results error')
 
-def dict_to_facts(entity, transaction = Transaction('', '', time.time())):
+def get_now_in_millis():
+    return int(time.time() * 1000)
+
+def get_fact_body_type(fact_body):
+    if isinstance(fact_body, int):
+        return "INT"
+    elif isinstance(fact_body, float):
+        return "FLOAT"
+    else:
+        return "TEXT"
+
+def dict_to_facts(entity, transaction = Transaction('', '', get_now_in_millis())):
     dicto_copy = {**entity}
     entity_id = ''
     try:
-        entity_id = dicto_copy.pop('id')
+        entity_id = dicto_copy.pop('id') 
     except:
         entity_id = dicto_copy.pop('entity_id')
     newfacts = [Fact(transaction_id = transaction.transaction_id,
                      entity_id = entity_id,
                      name = key,
-                     fact_type = 'TEXT',
+                     fact_type = get_fact_body_type(val),
+                     timestamp = transaction.timestamp,
                      body = val) 
                 for key, val 
                 in dicto_copy.items()]
@@ -66,8 +78,18 @@ def group_facts_under_entity_id(facts):
     raw_entities = {y: [x for x in facts if x.entity_id == y] for y in ids}
     entities = {y: facts_to_entity(x) for y, x in raw_entities}
     return entities
+ 
+fact_body_convertion = {
+    'TEXT': lambda a: a,
+    'INT': int,
+    'FLOAT': float
+}
+
+def convert_fact_body(fact):
+    return fact_body_convertion[fact.fact_type](fact.body)
 
 def facts_to_entity(facts):
     print("facts are " + facts)
-    raw = {x.name: x.body for x in facts}
+    raw = {x.name: convert_fact_body(x) for x in facts}
+    print('raw entity is ' + str(raw))
     return {**raw, **{'id': facts[0].entity_id}}
