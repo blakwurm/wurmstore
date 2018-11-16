@@ -113,9 +113,11 @@ def test_db_updates():
 
 def test_finding_individual_facts_with_query():
     w = setup_inserted_db()
-    single_property_query = {'find': ['fruit'], 'where': {'category': 'people'}}
+    single_property_query = {'find': ['fruit', 'name'], 'where': {'category': 'people'}}
     single_property_result = w.read(single_property_query)
-    assert len(single_property_result.results) == 3
+    if single_property_result.error:
+        raise single_property_result.error
+    assert len(single_property_result.results) == 6
 
 
 

@@ -108,38 +108,38 @@ class SQLiteStore:
         return (param_query, plug)
     
     def __prepare_find_plug__(self, search_query):
-        if (search_query['find'][0] == '*'):
+        if '*' in set(search_query['find']):
             return ({}, '')
         else:
             find_query = {'find_name{a}'.format(a=i): findname for i, findname in enumerate(search_query['find'])}
-            find_plug = 'name = ' + 'or name = '.append(['find_name{a}'.format(a=1) for i, findname in enumerate(search_query['find'])])
-            return (find_query, find_name)
+            find_plug = 'where name = :find_name0' if len(find_query) is 1 else 'where name = ' + ' or name = '.join([':find_name{a}'.format(a=i) for i in range(len(search_query['find']))])
+            return (find_query, find_plug)
 
+    __sql_find_query__ = """
+            select * from (
+                select * from facts where 
+                    entity_id in (
+                        select entity_id from (
+                            select entity_id, name, body from facts where timestamp < :__timestamp group by entity_id, name
+                        )
+                        where {plug}
+                    )    
+                and not fact_operation = 'REMOVE'
+                and timestamp < :__timestamp group by entity_id, name
+            )
+            {find_plug}
+        """
     
     def __get_facts_for__(self, search_query):
-        sql_revised_find = """
-        select* from (
-            select * from facts where 
-        select * from facts where 
-            select * from facts where 
-            entity_id in (
-                select entity_id from (
-                    select entity_id, name, body from facts where timestamp < :__timestamp group by entity_id, name
-                )
-                where {plug}
-            ) 
-        ) 
-            ) 
-            and not fact_operation = 'REMOVE'
-            and timestamp < :__timestamp group by entity_id, name
-        )
-        {find_plug}
-        """
+        sql_revised_find = self.__sql_find_query__ 
         query_dict, param_plug = self.__prepare_query_and_plug__(search_query)
         find_dict, find_plug = self.__prepare_find_plug__(search_query)
+        full_params = {**query_dict, **find_dict}
         with self.__with_cursor() as c:
-            full_query = sql_revised_find.format(plug = param_plug)
-            c.execute(full_query, query_dict)
+            full_query = sql_revised_find.format(plug = param_plug, find_plug = find_plug)
+            print(full_params)
+            print(full_query)
+            c.execute(full_query, full_params)
             raw_facts = c.fetchall()
             converted_facts = [Fact._make(x) for x in raw_facts]
             facts = converted_facts
