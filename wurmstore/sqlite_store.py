@@ -105,8 +105,6 @@ class SQLiteStore:
         # Add 1 to now timestamp, as otherwise we can't get stuff that was added this milisecond
         param_query.update({'__timestamp': search_query.get('timestamp', get_now_in_millis() + 1)})
         plug = 'and '.join(raw_plugs)
-        print(plug)
-        print(param_query)
         return (param_query, plug)
 
     
@@ -125,11 +123,9 @@ class SQLiteStore:
         query_dict, param_plug = self.__prepare_query_and_plug__(search_query)
         with self.__with_cursor() as c:
             full_query = sql_revised_find.format(plug = param_plug)
-            print(full_query)
             c.execute(full_query, query_dict)
             raw_facts = c.fetchall()
             converted_facts = [Fact._make(x) for x in raw_facts]
-            print(raw_facts)
             facts = converted_facts
         return facts
     

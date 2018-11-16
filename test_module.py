@@ -72,7 +72,7 @@ def compile_facts_to_dicts(facts):
     return dicts
 
 get_all_people_query = {
-    'find': '*',
+    'find': ['*'],
     'where': {'category': 'people'} 
 }
 
@@ -91,7 +91,7 @@ def test_general_reads():
 
 def test_id_reads():
     get_one_person_query = {
-        'find': "*",
+        'find': ["*"],
         'count': 1,
         'where': {'id': testdata[2]['id']}
     }
@@ -113,7 +113,11 @@ def test_db_updates():
 
 def test_finding_individual_facts_with_query():
     w = setup_inserted_db()
-    assert None
+    single_property_query = {'find': ['fruit'], 'where': {'category': 'people'}}
+    single_property_result = w.read(single_property_query)
+    assert len(single_property_result.results) == 3
+
+
 
 
 
