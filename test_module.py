@@ -119,9 +119,19 @@ def test_finding_individual_facts_with_query():
         raise single_property_result.error
     assert len(single_property_result.results) == 6
 
+def test_getting_full_raw():
+    w = setup_updated_db()
+    raw_data = w.get_raw_data()
+    wi = setup_inserted_db()
+    raw_wi_data = wi.get_raw_data()
+    assert len(list(raw_data['facts'])) - 2 is len(list(raw_wi_data['facts']))
+    assert len(list(raw_data['transactions'])) - 1 is len(list(raw_wi_data['transactions']))
 
-
-
+def test_restoring_raw_data():
+    w = setup_updated_db()
+    wn = WurmStore('memory')
+    w_raw = w.get_raw_data()
+    wn.restore_from_raw(w_raw)
 
 def test_thing():
     assert True

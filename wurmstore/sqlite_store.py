@@ -120,7 +120,9 @@ class SQLiteStore:
                 select * from facts where 
                     entity_id in (
                         select entity_id from (
-                            select entity_id, name, body from facts where timestamp < :__timestamp group by entity_id, name
+                            select * from (
+                                select entity_id, name, body from facts where timestamp < :__timestamp order by timestamp asc
+                            ) group by entity_id, name
                         )
                         where {plug}
                     )    
@@ -165,3 +167,26 @@ class SQLiteStore:
             "a"
         except Exception as e:
             return DeleteResult(results = [], error = e)
+    
+    def __get_raw_facts__(self):
+        sqlstatement = 'select * from facts'
+        # TODO - Make more memory-safe
+        with self.__with_cursor() as c:
+            c.execute(sqlstatement)
+            for thing in c:
+                yield c
+    
+    def __get_raw_transactions__(self):
+        sqlstatement = 'select * from transactions'
+        with self.__with_cursor() as c:
+            c.execute(sqlstatement)
+            for thing in c:
+                yield c
+    
+    def get_raw_data(self):
+        facts = self.__get_raw_facts__()
+        transactions = self.__get_raw_transactions__()
+        return {'facts': facts, 'transactions': transactions}
+    
+    def restore_from_raw(self, raw_data):
+        pass
