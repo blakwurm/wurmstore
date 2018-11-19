@@ -30,12 +30,15 @@ class WurmStoreBase:
         self.store_location = store_location
 
     def Transaction(self):
+        """Creates a returns a new transaction, with the current timestamp"""
         return Transaction(transaction_id = genID('transaction'), timestamp = get_now_in_millis())
 
     def Fact(self, *, name, body, entity_id, fact_type="TEXT", fact_operation = 'ADD', transaction_id="", timestamp=0):
+        """Creates and returns a new facts.Fact named tuple"""
         return Fact(name=name, body=body, entity_id=entity_id, fact_type=fact_type, fact_operation=fact_operation, transaction_id=transaction_id)
     
     def insert(self, entity):
+        """Given an entity (either a seq of facts or a dict), inserts it into the store"""
         try:
             transaction = self.Transaction()
             #self.__insert_head__(transaction)
@@ -47,6 +50,7 @@ class WurmStoreBase:
             return InsertionResult(results = [], error = e)
 
     def read(self, search_query):
+        """Given a properly-formed search query, returns the proper facts"""
         if (not query_well_formed(search_query)):
             return ReadResult(results = [], error = TypeError('search_query must be formed correctly'))
         try:
@@ -55,18 +59,22 @@ class WurmStoreBase:
             return ReadResult(results = [], error = e)
         
     def get_raw_data(self):
+        """Given a time range, returns all the facts in the store"""
         facts = self._get_raw_facts_()
         transactions = self._get_raw_transactions_()
         return {'facts': facts, 'transactions': transactions}
     
     def restore_from_raw(self, raw_data):
+        """Given a dict like is returned from get_raw_data, adds the facts and transactions into the store"""
         self._insert_facts_(raw_data['facts'])
         self._insert_transactions_(raw_data['transactions'])
     
     def dict_to_facts(self, entity, transaction = None):
+        """Converts an entity dict to a series of facts"""
         return dict_to_facts(entity, transaction if transaction else self.Transaction())
     
     def facts_to_dicts(self, facts):
+        """Converts a seq of facts to a seq of entities"""
         dicts = dict()  
         for fact in facts:
             old_entity = dicts.get(fact.entity_id, {'id': fact.entity_id})
