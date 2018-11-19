@@ -6,28 +6,6 @@ from collections import Counter
 import time
 
 
-
-table_creation_sql = [
-    """
-create table if not exists facts (
-    name text,
-    body text,
-    entity_id text,
-    fact_type text,
-    fact_operation text,
-    transaction_id text,
-    timestamp integer,
-    primary key (name, entity_id, transaction_id, timestamp) 
-) without rowid;
-    """,
-"""
-create table if not exists transactions (
-    transaction_id text primary key,
-    timestamp integer
-);
-"""
-]
-
 class SQLiteStore(WurmStoreBase):
 
     def __init__(self, location, *, memory_db = False):
@@ -131,3 +109,25 @@ class SQLiteStore(WurmStoreBase):
             for thing in c:
                 yield thing
     
+
+
+table_creation_sql = [
+    """
+create table if not exists facts (
+    name text,
+    body text,
+    entity_id text,
+    fact_type text,
+    fact_operation text,
+    transaction_id text,
+    timestamp integer,
+    primary key (name, entity_id, transaction_id, timestamp) 
+) without rowid;
+    """,
+"""
+create table if not exists transactions (
+    transaction_id text primary key,
+    timestamp integer
+);
+"""
+]
