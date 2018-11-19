@@ -47,7 +47,7 @@ def setup_updated_db():
     #w = WurmStore('sqlite_naive', 'db_updated.sqlite')
     w = WurmStore('memory')
     [w.insert(x) for x in testdata]
-    time.sleep(0.4) 
+    time.sleep(0.4)  
     w.insert([ 
         w.Fact(name='fruit', body='banana', entity_id='123123'),
         w.Fact(name='age', body='21', fact_type='INT', entity_id='qwerty') 
@@ -93,7 +93,7 @@ def test_id_reads():
         raise id_read_result.error
     assert id_read_result.results
 
-def test_db_updates():
+def test_db_updates(): 
     w = setup_updated_db()
     people_read_result = w.read(search_query = {**get_all_people_query})
     if people_read_result.error:

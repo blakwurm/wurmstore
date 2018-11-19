@@ -121,7 +121,7 @@ create table if not exists facts (
     fact_operation text,
     transaction_id text,
     timestamp integer,
-    primary key (name, entity_id, transaction_id, timestamp) 
+    primary key (name, entity_id, timestamp) 
 ) without rowid;
     """,
 """
