@@ -174,14 +174,14 @@ class SQLiteStore:
         with self.__with_cursor() as c:
             c.execute(sqlstatement)
             for thing in c:
-                yield c
+                yield thing
     
     def __get_raw_transactions__(self):
         sqlstatement = 'select * from transactions'
         with self.__with_cursor() as c:
             c.execute(sqlstatement)
             for thing in c:
-                yield c
+                yield thing
     
     def get_raw_data(self):
         facts = self.__get_raw_facts__()
@@ -189,4 +189,5 @@ class SQLiteStore:
         return {'facts': facts, 'transactions': transactions}
     
     def restore_from_raw(self, raw_data):
-        pass
+        self.__insert_facts__(raw_data['facts'])
+        [self.__insert_transaction__(x) for x in raw_data['transactions']]

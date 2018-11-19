@@ -124,7 +124,9 @@ def test_getting_full_raw():
     raw_data = w.get_raw_data()
     wi = setup_inserted_db()
     raw_wi_data = wi.get_raw_data()
-    assert len(list(raw_data['facts'])) - 2 is len(list(raw_wi_data['facts']))
+    factos = list(raw_data['facts'])
+    print(factos)
+    assert len(factos) - 2 is len(list(raw_wi_data['facts']))
     assert len(list(raw_data['transactions'])) - 1 is len(list(raw_wi_data['transactions']))
 
 def test_restoring_raw_data():
@@ -132,6 +134,10 @@ def test_restoring_raw_data():
     wn = WurmStore('memory')
     w_raw = w.get_raw_data()
     wn.restore_from_raw(w_raw)
+    orig_entities = w.read(get_all_people_query)
+    rest_entities = wn.read(get_all_people_query)
+    assert orig_entities.results == rest_entities.results
+
 
 def test_thing():
     assert True
