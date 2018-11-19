@@ -82,3 +82,5 @@ class WurmStoreBase:
         else:
             raise TypeError('entity should be a dict, or a list of lists/tuples')
     
+    def __str__(self):
+        return "WurmStore(storage_type = '{stor}', location = '{loc}')".format(stor=self.store_type, loc=self.store_location)

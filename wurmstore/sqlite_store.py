@@ -31,7 +31,7 @@ create table if not exists transactions (
 class SQLiteStore(WurmStoreBase):
 
     def __init__(self, location, *, memory_db = False):
-        WurmStoreBase.__init__(self, store_type = 'memory' if memory_db else 'sqlite', store_location = location)
+        WurmStoreBase.__init__(self, store_type = 'memory' if memory_db else 'sqlite_naive', store_location = location)
         self._conn = sqlite3.connect(location)
         for x in table_creation_sql:
             self._conn.execute(x)
@@ -87,7 +87,7 @@ class SQLiteStore(WurmStoreBase):
                     entity_id in (
                         select entity_id from (
                             select * from (
-                                select entity_id, name, body from facts where timestamp < :__timestamp order by timestamp asc
+                                select entity_id, name, body from facts where timestamp  < :__timestamp order by timestamp asc
                             ) group by entity_id, name
                         )
                         where {plug}
@@ -97,7 +97,7 @@ class SQLiteStore(WurmStoreBase):
             )
             {find_plug}
         """
-    
+        
     def _get_facts_for_(self, search_query):
         sql_revised_find = self._sql_find_query_ 
         query_dict, param_plug = self._prepare_query_and_plug_(search_query)

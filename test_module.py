@@ -52,9 +52,8 @@ def setup_updated_db():
         w.Fact(name='fruit', body='banana', entity_id='123123'),
         w.Fact(name='age', body='21', fact_type='INT', entity_id='qwerty') 
     ])
+    time.sleep(0.2) 
     return w
-
-
 
 incorrectly_formed_query = {}
 
@@ -125,8 +124,8 @@ def test_getting_full_raw():
 
 def test_restoring_raw_data():
     w = setup_updated_db()
-    #wn = WurmStore('memory')
-    wn = WurmStore('sqlite_naive', 'db_updated.sqlite')  
+    wn = WurmStore('memory')
+    #wn = WurmStore('sqlite_naive', 'db_updated.sqlite')  
     w_raw = w.get_raw_data()
     wn.restore_from_raw(w_raw)
     orig_entities = w.facts_to_dicts(w.read(get_all_people_query).results)
@@ -134,6 +133,13 @@ def test_restoring_raw_data():
     print("orig entities" + str(orig_entities))
     print("rest entities" + str(rest_entities))
     assert orig_entities == rest_entities
+
+def test_just_to_print():
+    w = setup_inserted_db()
+    print(w)
+    #assert False
+    assert True
+
 
 def test_thing(): 
     assert True
@@ -148,4 +154,3 @@ def test_other():
 
 def test_imported():
     assert WurmStore()
-
