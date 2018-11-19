@@ -15,8 +15,9 @@ create table if not exists facts (
     fact_type text,
     fact_operation text,
     transaction_id text,
-    timestamp integer
-);
+    timestamp integer,
+    primary key (name, entity_id, transaction_id, timestamp) 
+) without rowid;
     """,
 """
 create table if not exists transactions (
@@ -28,8 +29,10 @@ create table if not exists transactions (
 
 class SQLiteStore:
 
-    def __init__(self, location):
+    def __init__(self, location, *, memory_db = False):
         self.__conn = sqlite3.connect(location)
+        self.store_type = 'memory' if memory_db else 'sqlite'
+        self.store_location = location
         for x in table_creation_sql:
             self.__conn.execute(x)
 
@@ -40,11 +43,11 @@ class SQLiteStore:
 
     def __insert_facts__(self, facts):
         with self.__with_cursor() as c:
-            return [c.execute('insert into facts values (?, ?, ?, ?, ?, ?, ?)', x) for x in facts]
+            return [c.execute('insert or ignore into facts values (?, ?, ?, ?, ?, ?, ?)', x) for x in facts]
     
     def __insert_transactions__(self, transactions):
         with self.__with_cursor() as c:
-            [c.execute('insert into transactions values (?, ?)', x) for x in transactions]
+            [c.execute('insert or ignore into transactions values (?, ?)', x) for x in transactions]
 
     def __insert_insertion__(self, insertion):
         self.__insert_transactions__([insertion.transaction])

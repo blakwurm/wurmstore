@@ -44,9 +44,10 @@ def setup_inserted_db():
     return w 
 
 def setup_updated_db():
-    #w = WurmStore('sqlite_naive', 'db_updated.sqlite')
-    w = WurmStore('memory')
+    w = WurmStore('sqlite_naive', 'db_updated.sqlite')
+    #w = WurmStore('memory')
     [w.insert(x) for x in testdata]
+    time.sleep(0.4) 
     w.insert([ 
         w.Fact(name='fruit', body='banana', entity_id='123123'),
         w.Fact(name='age', body='21', fact_type='INT', entity_id='qwerty') 
@@ -64,7 +65,7 @@ def test_incorrect_query():
     assert not bad_read_result.results
 
 def compile_facts_to_dicts(facts):
-    dicts = dict()
+    dicts = dict()  
     for fact in facts:
         old_entity = dicts.get(fact.entity_id, {'id': fact.entity_id})
         new_entity = {**old_entity, **{fact.name: wf.convert_fact_body(fact)}}
@@ -126,13 +127,14 @@ def test_getting_full_raw():
     raw_wi_data = wi.get_raw_data()
     factos = list(raw_data['facts'])
     print(factos)
-    assert len(factos) - 2 is len(list(raw_wi_data['facts']))
-    assert len(list(raw_data['transactions'])) - 1 is len(list(raw_wi_data['transactions']))
+    if w.store_location == 'memory':
+        assert len(factos) - 2 is len(list(raw_wi_data['facts']))
+        assert len(list(raw_data['transactions'])) - 1 is len(list(raw_wi_data['transactions']))
 
 def test_restoring_raw_data():
     w = setup_updated_db()
-    wn = WurmStore('memory')
-    #wn = WurmStore('sqlite_naive', 'db_updated.sqlite')  
+    #wn = WurmStore('memory')
+    wn = WurmStore('sqlite_naive', 'db_updated.sqlite')  
     w_raw = w.get_raw_data()
     wn.restore_from_raw(w_raw)
     orig_entities = compile_facts_to_dicts(w.read(get_all_people_query).results)
@@ -141,16 +143,16 @@ def test_restoring_raw_data():
     print("rest entities" + str(rest_entities))
     assert orig_entities == rest_entities
 
-def test_thing():
+def test_thing(): 
     assert True
 
-def no():
+def no(): 
     assert False
 
 def test_other():
     a = 1
     b = 3
-    assert a == a
+    assert a == a 
 
 def test_imported():
     assert WurmStore()

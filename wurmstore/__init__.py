@@ -6,11 +6,11 @@ def WurmStore(storage_type = 'memory', location = 'db'):
 
 def __makeMemoryStore(location = ''):
     from wurmstore.sqlite_store import SQLiteStore
-    return SQLiteStore(':memory:')
+    return SQLiteStore(location = ':memory:', memory_db = True)
 
 def __makeSQLiteStore(location):
     from wurmstore.sqlite_store import SQLiteStore
-    return SQLiteStore(location)
+    return SQLiteStore(location = location)
 
 storage_types = dict()
 
