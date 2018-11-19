@@ -44,8 +44,8 @@ def setup_inserted_db():
     return w 
 
 def setup_updated_db():
-    w = WurmStore('sqlite_naive', 'db_updated.sqlite')
-    #w = WurmStore('memory')
+    #w = WurmStore('sqlite_naive', 'db_updated.sqlite')
+    w = WurmStore('memory')
     [w.insert(x) for x in testdata]
     time.sleep(0.4) 
     w.insert([ 

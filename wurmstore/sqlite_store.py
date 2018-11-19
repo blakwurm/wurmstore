@@ -57,14 +57,6 @@ class SQLiteStore(WurmStoreBase):
     def _deconstruct_dict_(self, entity, transaction):
         return dict_to_facts(entity, transaction)
     
-    def _prepare_for_insertion_(self, entity, transaction):
-        if isinstance(entity, dict):
-            return dict_to_facts(entity=entity, transaction=transaction)
-        elif isinstance(entity, list):
-            return [Fact._make(x)._replace(transaction_id = transaction.transaction_id, timestamp = transaction.timestamp) for x in entity]
-        else:
-            raise TypeError('entity should be a dict, or a list of lists/tuples')
-    
     def _prepare_query_and_plug_(self, search_query):
         param_query = {}
         raw_plugs = []

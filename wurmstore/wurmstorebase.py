@@ -1,6 +1,30 @@
 from wurmstore.facts import *
 
 class WurmStoreBase:
+    """
+    Base class for the WurmStore API.
+
+    Depends on the child class implimenting the following methods (see sqlite_store for a reference):
+
+    _insert_facts(self, facts)
+        Accepts an iterator of facts, and adds them to the store. Must accept both facts.Fact and a seven-value list/tuple
+    
+    _insert_transactions_(transactions)
+        Accepts an iterator of transactions, and adds them to the store. Must accept both facts.Transaction and a two-value list/tuple
+    
+    _insert_insertion_(insertion)
+        Accepts a facts.Insertion and adds the contained facts and transactions to the store
+    
+    _read_(search_query)
+        Accepts a search query and returns a ReadResult
+    
+    _get_raw_facts(timestamp_begin, timestamp_end)
+        Accepts a timestamp range, and returns the raw facts as a generator of plain lists/tuples
+    
+    _get_raw_transactions(timestamp_begin, timestamp_end)
+        Accepts a timestamp range, and returns the raw transactions as a generator of plain lists/tuples
+    """
+
     def __init__(self, store_type, store_location):
         self.store_type = store_type
         self.store_location = store_location
@@ -49,3 +73,12 @@ class WurmStoreBase:
             new_entity = {**old_entity, **{fact.name: convert_fact_body(fact)}}
             dicts.update({fact.entity_id: new_entity})
         return dicts
+
+    def _prepare_for_insertion_(self, entity, transaction):
+        if isinstance(entity, dict):
+            return dict_to_facts(entity=entity, transaction=transaction)
+        elif isinstance(entity, list):
+            return [Fact._make(x)._replace(transaction_id = transaction.transaction_id, timestamp = transaction.timestamp) for x in entity]
+        else:
+            raise TypeError('entity should be a dict, or a list of lists/tuples')
+    
