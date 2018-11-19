@@ -21,15 +21,8 @@ create table if not exists facts (
 """
 create table if not exists transactions (
     transaction_id text primary key,
-    entity_id text,
     timestamp integer
 );
-""", 
-"""
-create table if not exists heads (
-    entity_id text primary key,
-    transaction_id text
-)
 """
 ]
 
@@ -51,20 +44,15 @@ class SQLiteStore:
     
     def __insert_transactions__(self, transactions):
         with self.__with_cursor() as c:
-            [c.execute('insert into transactions values (?, ?, ?)', x) for x in transactions]
-    
-    def __insert_head__(self, transaction):
-        head = Head(entity_id = transaction.entity_id, transaction_id = transaction.transaction_id)
-        with self.__with_cursor() as c:
-            return c.execute('insert into heads values (?, ?)', head)
-        
+            [c.execute('insert into transactions values (?, ?)', x) for x in transactions]
+
     def __insert_insertion__(self, insertion):
         self.__insert_transactions__([insertion.transaction])
         self.__insert_facts__(insertion.facts)
         return InsertionResult(results = insertion.facts, error = None)
     
-    def create_transaction(self, entity_id):
-        return Transaction(transaction_id = genID('transaction'), entity_id = entity_id, timestamp = get_now_in_millis())
+    def create_transaction(self):
+        return Transaction(transaction_id = genID('transaction'), timestamp = get_now_in_millis())
     
     def Fact(self, *, name, body, entity_id, fact_type="TEXT", fact_operation = 'ADD', transaction_id="", timestamp=0):
         return Fact(name=name, body=body, entity_id=entity_id, fact_type=fact_type, fact_operation=fact_operation, transaction_id=transaction_id)
@@ -82,7 +70,7 @@ class SQLiteStore:
     
     def insert(self, entity):
         try:
-            transaction = self.create_transaction(getID(entity))
+            transaction = self.create_transaction()
             #self.__insert_head__(transaction)
             entity_facts = self.__prepare_for_insertion__(entity, transaction)
             insert = Insertion(transaction = transaction, facts = entity_facts, successful = True)
@@ -146,9 +134,6 @@ class SQLiteStore:
             converted_facts = [Fact._make(x) for x in raw_facts]
             facts = converted_facts
         return facts
-    
-    def __get_transactions_for__(self, ids):
-        sqlstring = "select * from transactions where entityID = ?"
 
     def __read__(self, search_query):
         return ReadResult(results = self.__get_facts_for__(search_query), error = None)

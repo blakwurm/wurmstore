@@ -7,7 +7,7 @@ import time
 
 Fact = namedtuple("Fact", 'name body entity_id fact_type fact_operation transaction_id timestamp', defaults=['str', 'ADD', '', 0])
 
-Transaction = namedtuple("Transaction", 'transaction_id entity_id timestamp')
+Transaction = namedtuple("Transaction", 'transaction_id timestamp')
 
 Insertion = namedtuple("Insertion", 'transaction facts successful', defaults=[True])
 
@@ -30,7 +30,7 @@ def get_fact_body_type(fact_body):
     else:
         return "TEXT"
 
-def dict_to_facts(entity, transaction = Transaction('', '', get_now_in_millis())):
+def dict_to_facts(entity, transaction = Transaction('', get_now_in_millis())):
     dicto_copy = {**entity}
     entity_id = ''
     try:

@@ -47,7 +47,7 @@ def setup_updated_db():
     #w = WurmStore('sqlite_naive', 'db_updated.sqlite')
     w = WurmStore('memory')
     [w.insert(x) for x in testdata]
-    w.insert([
+    w.insert([ 
         w.Fact(name='fruit', body='banana', entity_id='123123'),
         w.Fact(name='age', body='21', fact_type='INT', entity_id='qwerty') 
     ])
@@ -132,12 +132,14 @@ def test_getting_full_raw():
 def test_restoring_raw_data():
     w = setup_updated_db()
     wn = WurmStore('memory')
+    #wn = WurmStore('sqlite_naive', 'db_updated.sqlite')  
     w_raw = w.get_raw_data()
     wn.restore_from_raw(w_raw)
-    orig_entities = w.read(get_all_people_query)
-    rest_entities = wn.read(get_all_people_query)
-    assert orig_entities.results == rest_entities.results
-
+    orig_entities = compile_facts_to_dicts(w.read(get_all_people_query).results)
+    rest_entities = compile_facts_to_dicts(wn.read(get_all_people_query).results)
+    print("orig entities" + str(orig_entities))
+    print("rest entities" + str(rest_entities))
+    assert orig_entities == rest_entities
 
 def test_thing():
     assert True
