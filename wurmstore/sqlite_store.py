@@ -49,9 +49,9 @@ class SQLiteStore:
         with self.__with_cursor() as c:
             return [c.execute('insert into facts values (?, ?, ?, ?, ?, ?, ?)', x) for x in facts]
     
-    def __insert_transaction__(self, transaction):
+    def __insert_transactions__(self, transactions):
         with self.__with_cursor() as c:
-            c.execute('insert into transactions values (?, ?, ?)', transaction)
+            [c.execute('insert into transactions values (?, ?, ?)', x) for x in transactions]
     
     def __insert_head__(self, transaction):
         head = Head(entity_id = transaction.entity_id, transaction_id = transaction.transaction_id)
@@ -59,7 +59,7 @@ class SQLiteStore:
             return c.execute('insert into heads values (?, ?)', head)
         
     def __insert_insertion__(self, insertion):
-        self.__insert_transaction__(insertion.transaction)
+        self.__insert_transactions__([insertion.transaction])
         self.__insert_facts__(insertion.facts)
         return InsertionResult(results = insertion.facts, error = None)
     
@@ -190,4 +190,4 @@ class SQLiteStore:
     
     def restore_from_raw(self, raw_data):
         self.__insert_facts__(raw_data['facts'])
-        [self.__insert_transaction__(x) for x in raw_data['transactions']]
+        self.__insert_transactions__(raw_data['transactions'])
