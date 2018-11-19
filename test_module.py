@@ -64,14 +64,6 @@ def test_incorrect_query():
     assert isinstance(bad_read_result.error, TypeError)
     assert not bad_read_result.results
 
-def compile_facts_to_dicts(facts):
-    dicts = dict()  
-    for fact in facts:
-        old_entity = dicts.get(fact.entity_id, {'id': fact.entity_id})
-        new_entity = {**old_entity, **{fact.name: wf.convert_fact_body(fact)}}
-        dicts.update({fact.entity_id: new_entity})
-    return dicts
-
 get_all_people_query = {
     'find': ['*'],
     'where': {'category': 'people'} 
@@ -85,7 +77,7 @@ def test_general_reads():
     assert people_read_result.error is None
     assert people_read_result.results
     assert isinstance(people_read_result.results, list)
-    entities = compile_facts_to_dicts(people_read_result.results)
+    entities = w.facts_to_dicts(people_read_result.results)
     assert entities.get(testdata[0]['id'], None)
     print(entities)
     assert entities[testdata[0]['id']] == testdata[0]
@@ -107,7 +99,7 @@ def test_db_updates():
     people_read_result = w.read(search_query = {**get_all_people_query})
     if people_read_result.error:
         raise people_read_result.error
-    entities = compile_facts_to_dicts(people_read_result.results)
+    entities = w.facts_to_dicts(people_read_result.results)
     assert entities.get('123123', None)['fruit'] == 'banana'
     assert entities.get('qwerty', None)['age'] == 21
     assert len(people_read_result.results) == 12
@@ -127,7 +119,7 @@ def test_getting_full_raw():
     raw_wi_data = wi.get_raw_data()
     factos = list(raw_data['facts'])
     print(factos)
-    if w.store_location == 'memory':
+    if w.store_type == 'memory':
         assert len(factos) - 2 is len(list(raw_wi_data['facts']))
         assert len(list(raw_data['transactions'])) - 1 is len(list(raw_wi_data['transactions']))
 
@@ -137,8 +129,8 @@ def test_restoring_raw_data():
     wn = WurmStore('sqlite_naive', 'db_updated.sqlite')  
     w_raw = w.get_raw_data()
     wn.restore_from_raw(w_raw)
-    orig_entities = compile_facts_to_dicts(w.read(get_all_people_query).results)
-    rest_entities = compile_facts_to_dicts(wn.read(get_all_people_query).results)
+    orig_entities = w.facts_to_dicts(w.read(get_all_people_query).results)
+    rest_entities = w.facts_to_dicts(wn.read(get_all_people_query).results)
     print("orig entities" + str(orig_entities))
     print("rest entities" + str(rest_entities))
     assert orig_entities == rest_entities

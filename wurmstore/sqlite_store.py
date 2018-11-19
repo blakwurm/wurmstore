@@ -1,5 +1,6 @@
 import sqlite3
 from wurmstore.facts import *
+from wurmstore.wurmstorebase import WurmStoreBase
 from contextlib import contextmanager
 from collections import Counter
 import time
@@ -27,43 +28,36 @@ create table if not exists transactions (
 """
 ]
 
-class SQLiteStore:
+class SQLiteStore(WurmStoreBase):
 
     def __init__(self, location, *, memory_db = False):
-        self.__conn = sqlite3.connect(location)
-        self.store_type = 'memory' if memory_db else 'sqlite'
-        self.store_location = location
+        WurmStoreBase.__init__(self, store_type = 'memory' if memory_db else 'sqlite', store_location = location)
+        self._conn = sqlite3.connect(location)
         for x in table_creation_sql:
-            self.__conn.execute(x)
+            self._conn.execute(x)
 
     @contextmanager
-    def __with_cursor(self):
-        yield self.__conn.cursor()
-        self.__conn.commit()
+    def _with_cursor_(self):
+        yield self._conn.cursor()
+        self._conn.commit()
 
-    def __insert_facts__(self, facts):
-        with self.__with_cursor() as c:
+    def _insert_facts_(self, facts):
+        with self._with_cursor_() as c:
             return [c.execute('insert or ignore into facts values (?, ?, ?, ?, ?, ?, ?)', x) for x in facts]
     
-    def __insert_transactions__(self, transactions):
-        with self.__with_cursor() as c:
-            [c.execute('insert or ignore into transactions values (?, ?)', x) for x in transactions]
+    def _insert_transactions_(self, transactions):
+        with self._with_cursor_() as c:
+            return [c.execute('insert or ignore into transactions values (?, ?)', x) for x in transactions]
 
-    def __insert_insertion__(self, insertion):
-        self.__insert_transactions__([insertion.transaction])
-        self.__insert_facts__(insertion.facts)
+    def _insert_insertion_(self, insertion):
+        self._insert_transactions_([insertion.transaction])
+        self._insert_facts_(insertion.facts)
         return InsertionResult(results = insertion.facts, error = None)
     
-    def create_transaction(self):
-        return Transaction(transaction_id = genID('transaction'), timestamp = get_now_in_millis())
-    
-    def Fact(self, *, name, body, entity_id, fact_type="TEXT", fact_operation = 'ADD', transaction_id="", timestamp=0):
-        return Fact(name=name, body=body, entity_id=entity_id, fact_type=fact_type, fact_operation=fact_operation, transaction_id=transaction_id)
-        
-    def __deconstruct_dict(self, entity, transaction):
+    def _deconstruct_dict_(self, entity, transaction):
         return dict_to_facts(entity, transaction)
     
-    def __prepare_for_insertion__(self, entity, transaction):
+    def _prepare_for_insertion_(self, entity, transaction):
         if isinstance(entity, dict):
             return dict_to_facts(entity=entity, transaction=transaction)
         elif isinstance(entity, list):
@@ -71,18 +65,7 @@ class SQLiteStore:
         else:
             raise TypeError('entity should be a dict, or a list of lists/tuples')
     
-    def insert(self, entity):
-        try:
-            transaction = self.create_transaction()
-            #self.__insert_head__(transaction)
-            entity_facts = self.__prepare_for_insertion__(entity, transaction)
-            insert = Insertion(transaction = transaction, facts = entity_facts, successful = True)
-            return self.__insert_insertion__(insert)
-        except Exception as e:
-            #return Insertion(transaction = None, facts = None, successful = False)
-            return InsertionResult(results = [], error = e)
-    
-    def __prepare_query_and_plug__(self, search_query):
+    def _prepare_query_and_plug_(self, search_query):
         param_query = {}
         raw_plugs = []
         for i, (key, value) in enumerate(search_query['where'].items()):
@@ -98,7 +81,7 @@ class SQLiteStore:
         plug = 'and '.join(raw_plugs)
         return (param_query, plug)
     
-    def __prepare_find_plug__(self, search_query):
+    def _prepare_find_plug_(self, search_query):
         if '*' in set(search_query['find']):
             return ({}, '')
         else:
@@ -106,7 +89,7 @@ class SQLiteStore:
             find_plug = 'where name = :find_name0' if len(find_query) is 1 else 'where name = ' + ' or name = '.join([':find_name{a}'.format(a=i) for i in range(len(search_query['find']))])
             return (find_query, find_plug)
 
-    __sql_find_query__ = """
+    _sql_find_query_ = """
             select * from (
                 select * from facts where 
                     entity_id in (
@@ -123,12 +106,12 @@ class SQLiteStore:
             {find_plug}
         """
     
-    def __get_facts_for__(self, search_query):
-        sql_revised_find = self.__sql_find_query__ 
-        query_dict, param_plug = self.__prepare_query_and_plug__(search_query)
-        find_dict, find_plug = self.__prepare_find_plug__(search_query)
+    def _get_facts_for_(self, search_query):
+        sql_revised_find = self._sql_find_query_ 
+        query_dict, param_plug = self._prepare_query_and_plug_(search_query)
+        find_dict, find_plug = self._prepare_find_plug_(search_query)
         full_params = {**query_dict, **find_dict}
-        with self.__with_cursor() as c:
+        with self._with_cursor_() as c:
             full_query = sql_revised_find.format(plug = param_plug, find_plug = find_plug)
             print(full_params)
             print(full_query)
@@ -138,44 +121,21 @@ class SQLiteStore:
             facts = converted_facts
         return facts
 
-    def __read__(self, search_query):
-        return ReadResult(results = self.__get_facts_for__(search_query), error = None)
-
-    def read(self, search_query):
-        if (not query_well_formed(search_query)):
-            return ReadResult(results = [], error = TypeError('search_query must be formed correctly'))
-        try:
-            return self.__read__(search_query)
-        except Exception as e:
-            return ReadResult(results = [], error = e)
+    def _read_(self, search_query):
+        return ReadResult(results = self._get_facts_for_(search_query), error = None)
     
-    def delete(self, facts):
-        """Will mark the provided facts as deleted"""
-        try:
-            "a"
-        except Exception as e:
-            return DeleteResult(results = [], error = e)
-    
-    def __get_raw_facts__(self):
-        sqlstatement = 'select * from facts'
+    def _get_raw_facts_(self, timestamp_begin = 0, timestamp_end = 999999999999999):
+        sqlstatement = 'select * from facts where timestamp > :timestamp_begin and timestamp < :timestamp_end'
         # TODO - Make more memory-safe
-        with self.__with_cursor() as c:
-            c.execute(sqlstatement)
+        with self._with_cursor_() as c:
+            c.execute(sqlstatement, {'timestamp_begin': timestamp_begin, 'timestamp_end': timestamp_end})
             for thing in c:
                 yield thing
     
-    def __get_raw_transactions__(self):
+    def _get_raw_transactions_(self):
         sqlstatement = 'select * from transactions'
-        with self.__with_cursor() as c:
+        with self._with_cursor_() as c:
             c.execute(sqlstatement)
             for thing in c:
                 yield thing
     
-    def get_raw_data(self):
-        facts = self.__get_raw_facts__()
-        transactions = self.__get_raw_transactions__()
-        return {'facts': facts, 'transactions': transactions}
-    
-    def restore_from_raw(self, raw_data):
-        self.__insert_facts__(raw_data['facts'])
-        self.__insert_transactions__(raw_data['transactions'])
